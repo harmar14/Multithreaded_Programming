@@ -1,4 +1,4 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <omp.h>
 #include <iostream>
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
 
     //opening output file
     ofstream output;
-    output.open(nameOut); //"out.txt"
+    output.open(nameOut);
     if (!output) {
         cout << "Writing file error";
         exit(1);
