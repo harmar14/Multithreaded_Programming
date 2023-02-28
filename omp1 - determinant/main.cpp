@@ -6,6 +6,8 @@
 #include <string>
 #include <chrono>
 
+#define EPSILON (numeric_limits<float>::epsilon() * (1e-7))
+
 using namespace std;
 
 void matrix_out(float* matrix, size_t n) {
@@ -22,7 +24,7 @@ void matrix_out(float* matrix, size_t n) {
 float calc_det(float* matrix, size_t n) {
 
     float tmp;
-    long double det = 1; 
+    float det = 1; 
 
     auto start_time = chrono::steady_clock::now();
 
@@ -31,12 +33,12 @@ float calc_det(float* matrix, size_t n) {
         float pivot = matrix[k * n + k];
         int pivotRow = k;
         for (int row = k + 1; row < n; ++row) {
-            if (abs(matrix[row * n + k]) > abs(pivot)) {
+            if (fabs(matrix[row * n + k] - pivot) > EPSILON) { //difference between fabs and abs is that fabs returns float but abs returns int
                 pivot = matrix[row * n + k];
                 pivotRow = row;
             }
         }
-        if (pivot == 0.0) {
+        if (fabs(pivot - 0.0) <= EPSILON) {
             return 0.0;
         }
         if (pivotRow != k) {
@@ -69,7 +71,7 @@ float calc_det(float* matrix, size_t n) {
 float calc_det_omp(float* matrix, size_t n, int thNum) {
 
     float tmp;
-    long double det = 1;
+    float det = 1;
 
     auto start_time = chrono::steady_clock::now();
 
@@ -80,12 +82,13 @@ float calc_det_omp(float* matrix, size_t n, int thNum) {
 
         #pragma omp parallel for num_threads(thNum) schedule(static, 2)
         for (int row = k + 1; row < n; ++row) {
-            if (abs(matrix[row * n + k]) > abs(pivot)) {
+            #pragma omp critical
+            if (fabs(matrix[row * n + k] - pivot) > EPSILON) {
                 pivot = matrix[row * n + k];
                 pivotRow = row;
             }
         }
-        if (pivot == 0.0) {
+        if (fabs(pivot - 0.0) <= EPSILON) {
             return 0.0;
         }
         if (pivotRow != k) {
@@ -118,7 +121,7 @@ float calc_det_omp(float* matrix, size_t n, int thNum) {
 int main(int argc, char* argv[]) {
 
     if (argc != 4) {
-        cout << "Wrong number of parameters";
+        cerr << "Wrong number of parameters";
         exit(1);
     }
 
@@ -130,7 +133,7 @@ int main(int argc, char* argv[]) {
     ifstream input;
     input.open(nameIn);
     if (!input) {
-        cout << "Reading file error";
+        cerr << "Reading file error";
         exit(1);
     }
 
@@ -142,8 +145,8 @@ int main(int argc, char* argv[]) {
     float* matrix = new float[n * n];
 
     if (matrix == nullptr) {
-        cout << "Memory can not be allocated";
-        return 1;
+        cerr << "Memory can not be allocated";
+        exit(1);
     }
 
     for (int i = 0; i < n; i++) {
@@ -155,22 +158,25 @@ int main(int argc, char* argv[]) {
     input.close();
 
     //calling function to calculate determinant (Gauss method)
-    long double det;
+    float det;
     if (threadsAmount == -1) {
         det = calc_det(matrix, n);
     }
-    else if (threadsAmount == 0 or threadsAmount > 8) {
-        det = calc_det_omp(matrix, n, 8);
+    else if (threadsAmount == 0 or threadsAmount > omp_get_max_threads()) {
+        det = calc_det_omp(matrix, n, omp_get_max_threads());
     }
     else {
         det = calc_det_omp(matrix, n, threadsAmount);
     }
 
+    //deleting matrix from memory
+    delete[] matrix;
+
     //opening output file
     ofstream output;
     output.open(nameOut);
     if (!output) {
-        cout << "Writing file error";
+        cerr << "Writing file error";
         exit(1);
     }
 
@@ -179,9 +185,6 @@ int main(int argc, char* argv[]) {
     output.precision(2);
     output << det << "\n";
     output.close();
-
-    //deleting matrix from memory
-    delete[] matrix;
 
     return 0;
 
