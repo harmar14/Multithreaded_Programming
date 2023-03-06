@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <chrono>
+#include <new>
 
 #define EPSILON (numeric_limits<float>::epsilon() * (1e-7))
 
@@ -142,7 +143,7 @@ int main(int argc, char* argv[]) {
     input >> n;
 
     //reading matrix from file
-    float* matrix = new float[n * n];
+    float* matrix = new (nothrow) float[n * n];
 
     if (matrix == nullptr) {
         cerr << "Memory can not be allocated";
