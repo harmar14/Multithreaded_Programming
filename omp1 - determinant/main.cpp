@@ -81,9 +81,7 @@ float calc_det_omp(float* matrix, size_t n, int thNum) {
         float pivot = matrix[k * n + k];
         int pivotRow = k;
 
-        #pragma omp parallel for num_threads(thNum) schedule(static, 2)
         for (int row = k + 1; row < n; ++row) {
-            #pragma omp critical
             if (fabs(matrix[row * n + k] - pivot) > EPSILON) {
                 pivot = matrix[row * n + k];
                 pivotRow = row;
